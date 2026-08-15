@@ -88,7 +88,9 @@ func (c *Compactor) Compact(events []model.Event, incidents []model.Incident) (R
 		}
 		incident.EventIDs = ids
 		if incident.Status != model.IncidentResolved && c.Policy.EventDays > 0 && incident.LastSeen.Before(eventCutoff) {
-			_ = incident.TransitionTo(model.IncidentResolved, now, "supporting events expired by retention")
+			if err := incident.TransitionTo(model.IncidentResolved, now, "supporting events expired by retention"); err != nil {
+				return result, fmt.Errorf("close incident %q: %w", incident.ID, err)
+			}
 			result.Stats.ClosedIncidents++
 		}
 		result.Incidents = append(result.Incidents, incident)
